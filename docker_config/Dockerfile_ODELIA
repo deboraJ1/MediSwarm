@@ -170,45 +170,45 @@ RUN python3 -m pip cache purge
 
 # Update versions of installed packages
 RUN apt install -y \
-    base-files=12ubuntu4.7 \
-    bash=5.1-6ubuntu1.1 \
-    bsdutils=1:2.37.2-4ubuntu3.4 \
-    ca-certificates=20240203~22.04.1 \
-    coreutils=8.32-4.1ubuntu1.2 \
-    dpkg=1.21.1ubuntu2.6 \
-    e2fsprogs=1.46.5-2ubuntu1.2 \
-    gpgv=2.2.27-3ubuntu2.5 \
-    libblkid1=2.37.2-4ubuntu3.4 \
-    libc-bin=2.35-0ubuntu3.13 \
-    libc-dev-bin=2.35-0ubuntu3.13 \
-    libc6-dev=2.35-0ubuntu3.13 \
-    libc6=2.35-0ubuntu3.13 \
-    libcap2=1:2.44-1ubuntu0.22.04.2 \
-    libcom-err2=1.46.5-2ubuntu1.2 \
-    libext2fs2=1.46.5-2ubuntu1.2 \
-    libgnutls30=3.7.3-4ubuntu1.8 \
-    libgssapi-krb5-2=1.19.2-2ubuntu0.7 \
-    libk5crypto3=1.19.2-2ubuntu0.7 \
-    libkrb5-3=1.19.2-2ubuntu0.7 \
-    libkrb5support0=1.19.2-2ubuntu0.7 \
-    libmount1=2.37.2-4ubuntu3.4 \
-    libpam-modules-bin=1.4.0-11ubuntu2.6 \
-    libpam-modules=1.4.0-11ubuntu2.6 \
-    libpam-runtime=1.4.0-11ubuntu2.6 \
-    libpam0g=1.4.0-11ubuntu2.6 \
-    libseccomp2=2.5.3-2ubuntu3~22.04.1 \
-    libsmartcols1=2.37.2-4ubuntu3.4 \
-    libss2=1.46.5-2ubuntu1.2 \
-    libssl3=3.0.2-0ubuntu1.21 \
-    libsystemd0=249.11-0ubuntu3.17 \
-    libtasn1-6=4.18.0-4ubuntu0.2 \
-    libudev1=249.11-0ubuntu3.17 \
-    libuuid1=2.37.2-4ubuntu3.4 \
-    linux-libc-dev=5.15.0-171.181 \
-    logsave=1.46.5-2ubuntu1.2 \
-    mount=2.37.2-4ubuntu3.4 \
-    openssl=3.0.2-0ubuntu1.21 \
-    util-linux=2.37.2-4ubuntu3.4
+    base-files \
+    bash \
+    bsdutils \
+    ca-certificates \
+    coreutils \
+    dpkg \
+    e2fsprogs \
+    gpgv \
+    libblkid1 \
+    libc-bin \
+    libc-dev-bin \
+    libc6-dev \
+    libc6 \
+    libcap2 \
+    libcom-err2 \
+    libext2fs2 \
+    libgnutls30 \
+    libgssapi-krb5-2 \
+    libk5crypto3 \
+    libkrb5-3 \
+    libkrb5support0 \
+    libmount1 \
+    libpam-modules-bin \
+    libpam-modules \
+    libpam-runtime \
+    libpam0g \
+    libseccomp2 \
+    libsmartcols1 \
+    libss2 \
+    libssl3 \
+    libsystemd0 \
+    libtasn1-6 \
+    libudev1 \
+    libuuid1 \
+    linux-libc-dev \
+    logsave \
+    mount \
+    openssl \
+    util-linux
 
 # Install apt-transport-https curl gnupg lsb-release zip and dependencies at defined versions
 RUN apt install -y \
