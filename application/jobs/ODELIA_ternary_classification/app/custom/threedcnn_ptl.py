@@ -6,12 +6,16 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from data.datamodules import DataModule
 from models import ResNet, MST
 from env_config import load_environment_variables, prepare_odelia_dataset, prepare_odelia_dataset_without_augmentation, generate_run_directory
+from models.models_config import create_model, get_unified_model_name
 import torch.multiprocessing as mp
 from hashlib import sha3_224 as hash_function
 from typing import List, Tuple
+from pathlib import Path
 
 import logging
 import csv
+import importlib.util
+import os
 
 FILENAME_GT_PREDPROB_AGGREGATED_MODEL_TRAIN = 'aggregated_model_gt_and_classprob_train.csv'
 FILENAME_GT_PREDPROB_SITE_MODEL_TRAIN = 'site_model_gt_and_classprob_train.csv'
@@ -82,14 +86,14 @@ def log_data_hash(dm: DataModule, logger) -> None:
     logger.info(f"Data hash: {hash_all}")
 
 
-def set_up_data_module(logger):
+def set_up_data_module(logger, model_name: str = ''):
     def _log_dataset_hash(logger) -> None:
         ds_train_woaug, ds_val_woaug = prepare_odelia_dataset_without_augmentation()
         datamodule = DataModule(
             ds_train=ds_train_woaug,
             ds_val=ds_val_woaug,
             batch_size=1,
-            pin_memory=True,
+            #pin_memory=True,
             weights=None,
             num_workers=mp.cpu_count(),
         )
@@ -97,7 +101,7 @@ def set_up_data_module(logger):
 
     torch.set_float32_matmul_precision('high')
     _log_dataset_hash(logger)
-    ds_train, ds_val, path_run_dir, run_name = prepare_odelia_dataset()
+    ds_train, ds_val, path_run_dir, run_name = prepare_odelia_dataset(model_name)
     num_classes = sum(ds_train.class_labels_num)
     logger.info(f"Dataset path: {ds_train}")
     logger.info(f"Run directory: {path_run_dir}")
@@ -184,85 +188,24 @@ class GT_PredProb_Output_Callback(Callback):
                                      self.csv_filename_validation)
 
 
-def prepare_training(logger, max_epochs: int, site_name: str):
+def prepare_training(logger, max_epochs: int, model_variant: str):
     try:
+
         env_vars = load_environment_variables()
-        data_module, path_run_dir, run_name, num_classes, loss_kwargs = set_up_data_module(logger)
+        model_name = get_unified_model_name(logger, model_variant, env_vars)
+        data_module, path_run_dir, run_name, num_classes, loss_kwargs = set_up_data_module(logger, model_name)
+        
+        from models.models_config import create_model
+        model = create_model(
+            logger, 
+            model_name=model_name,
+            num_classes=num_classes,
+            loss_kwargs=loss_kwargs,
+            env_vars=env_vars
+        )
 
         if not torch.cuda.is_available():
             raise RuntimeError("This example requires a GPU")
-
-        logger.info(f"Running code version {env_vars['mediswarm_version']}")
-        logger.info(f"Using GPU for training")
-
-        # Allow an explicit model_variant to override the configured env model name.
-        model_name = model_variant if (model_variant is not None and model_variant != "") else os.environ.get('MODEL_NAME', '')
-
-        data_module, path_run_dir, run_name, num_classes, loss_kwargs = set_up_data_module(logger, model_name)
-
-        model = None
-        if model_name in ['ResNet10', 'ResNet18', 'ResNet34', 'ResNet50', 'ResNet101', 'ResNet152']:
-            resnet_variant = int(model_name[6:])
-            model = ResNet(n_input_channels=1,
-                           num_classes=num_classes,
-                           spatial_dims=3,
-                           resnet_variant=resnet_variant,
-                           loss_kwargs=loss_kwargs)
-        elif model_name == 'MST':
-            model = MST(n_input_channels=1,
-                        num_classes=num_classes,
-                        spatial_dims=3,
-                        loss_kwargs=loss_kwargs)
-        elif model_name == "Swin3D":
-            print(f"Using Swin3D model:\nShould we include {loss_kwargs} here?")
-            model = Swin3D(n_input_channels=1,
-                           num_classes=num_classes,
-                           spatial_dims=3)
-        elif "challenge_" in model_name:
-            # The challenge model folder starts with a digit (3agaldran), which
-            # is not a valid Python identifier for standard imports. Load the
-            # factory by file path using importlib to avoid renaming directories.
-            import importlib.util
-            import os
-            team_name = model_name.split('_')[1]
-            if team_name == "1DvideAndConquer":
-                # TODO not yet implemented
-                model = None
-                pass
-            elif team_name == "2BCN_AIM":
-                # TODO not yet implemented
-                model = None
-                pass
-            elif team_name == "3agaldran":
-                factory_path = os.path.join(
-                    os.path.dirname(__file__),
-                    "models",
-                    "challenge",
-                    "3agaldran",
-                    "model_factory.py",
-                )
-                spec = importlib.util.spec_from_file_location("agaldran_model_factory", factory_path)
-                agaldran_factory = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(agaldran_factory)
-                model = agaldran_factory.model_factory(arch="mvit_v2_s",
-                                                    pretrained_path="application\\jobs\\ODELIA_ternary_classification\\app\\custom\\models\\challenge\\3agaldran\\mvit_v2_s-ae3be167.pth",
-                                                    num_classes=3,
-                                                    in_ch=3,
-                                                    seed=123)
-            elif team_name == "4LME_ABMIL":
-                # TODO not yet implemented
-                model = None
-                pass
-            elif team_name == "5Pimed":
-                # TODO not yet implemented
-                model = None
-                pass
-            else:
-                raise ValueError(f"Unknown challenge team name: {team_name}")
-        else:
-            raise ValueError(f"Unsupported model name: {model_name}.")
-
-        logger.info(f"Using model: {model_name}")
 
         to_monitor = "val/ACC"
         min_max = "max"
